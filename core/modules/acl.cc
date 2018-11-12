@@ -42,6 +42,7 @@ const Commands ACL::cmds = {
 CommandResponse ACL::Init(const bess::pb::ACLArg &arg) {
   for (const auto &rule : arg.rules()) {
     ACLRule new_rule = {
+        .proto = static_cast<uint8_t>(rule.ipproto()),
         .src_ip = Ipv4Prefix(rule.src_ip()),
         .dst_ip = Ipv4Prefix(rule.dst_ip()),
         .src_port = be16_t(static_cast<uint16_t>(rule.src_port())),
@@ -81,7 +82,8 @@ void ACL::ProcessBatch(Context *ctx, bess::PacketBatch *batch) {
 
     bool emitted = false;
     for (const auto &rule : rules_) {
-      if (rule.Match(ip->src, ip->dst, udp->src_port, udp->dst_port)) {
+      if (rule.Match(ip->src, ip->dst, udp->src_port, udp->dst_port,
+                     ip->protocol)) {
         if (!rule.drop) {
           emitted = true;
           EmitPacket(ctx, pkt, incoming_gate);

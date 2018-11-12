@@ -420,6 +420,29 @@ message ACLArg {
     uint32 dst_port = 4;  /// TCP/UDP Destination port. Wildcard if 0.
     bool established = 5; /// Not implemented
     bool drop = 6;        /// Drop matched packets if true, forward if false. By default ACL drops all traffic.
+    uint32 ipproto = 7;   /// IP protocol (TCP or UDP)
+  }
+  repeated Rule rules = 1; ///A list of ACL rules.
+}
+
+/**
+ * The module DPDKACL is a DPDK-based implementation with interfaces compatible with the ACL module.
+ *
+ * __Input Gates__: 1
+ * __Output Gates__: 1
+ */
+message DPDKACLArg {
+  /**
+   * One ACL rule is represented by the following 6-tuple.
+   */
+  message Rule {
+    string src_ip = 1;    /// Source IP block in CIDR. Wildcard if "".
+    string dst_ip = 2;    /// Destination IP block in CIDR. Wildcard if "".
+    uint32 src_port = 3;  /// TCP/UDP source port. Wildcard if 0.
+    uint32 dst_port = 4;  /// TCP/UDP Destination port. Wildcard if 0.
+    bool established = 5; /// Not implemented
+    bool drop = 6;        /// Drop matched packets if true, forward if false. By default ACL drops all traffic.
+    uint32 ipproto = 7;   /// IP protocol (TCP or UDP)
   }
   repeated Rule rules = 1; ///A list of ACL rules.
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2017, Nefeli Networks, Inc.
+// Copyright (c) 2018, Chang Lan
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -27,49 +27,49 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef BESS_MODULES_ACL_H_
-#define BESS_MODULES_ACL_H_
+#ifndef BESS_MODULES_DPDKACL_H_
+#define BESS_MODULES_DPDKACL_H_
 
-#include <vector>
+#include <rte_config.h>
+#include <rte_acl.h>
 
 #include "../module.h"
 #include "../pb/module_msg.pb.h"
 #include "../utils/ip.h"
 
+#define MAX_RULES 1000000
+
 using bess::utils::be16_t;
 using bess::utils::be32_t;
 using bess::utils::Ipv4Prefix;
 
-class ACL final : public Module {
- public:
-  struct ACLRule {
-    bool Match(be32_t sip, be32_t dip, be16_t sport, be16_t dport, uint8_t protocol) const {
-      return src_ip.Match(sip) && dst_ip.Match(dip) &&
-             (src_port == be16_t(0) || src_port == sport) &&
-             (dst_port == be16_t(0) || dst_port == dport) &&
-             (proto == 0 || proto == protocol);
-    }
-    uint8_t proto;
-    Ipv4Prefix src_ip;
-    Ipv4Prefix dst_ip;
-    be16_t src_port;
-    be16_t dst_port;
-    bool drop;
-  };
+struct match_headers {
+  uint8_t proto;
+  uint32_t ipv4_src;
+  uint32_t ipv4_dst;
+  uint16_t src_port;
+  uint16_t dst_port;
+} __attribute__((packed));
 
+class DPDKACL final : public Module {
+ public:
   static const Commands cmds;
 
-  ACL() : Module() { max_allowed_workers_ = Worker::kMaxWorkers; }
-
-  CommandResponse Init(const bess::pb::ACLArg &arg);
+  DPDKACL();
+  ~DPDKACL();
 
   void ProcessBatch(Context *ctx, bess::PacketBatch *batch) override;
 
-  CommandResponse CommandAdd(const bess::pb::ACLArg &arg);
+  CommandResponse Init(const bess::pb::DPDKACLArg &arg);
+  CommandResponse CommandAdd(const bess::pb::DPDKACLArg &arg);
   CommandResponse CommandClear(const bess::pb::EmptyArg &arg);
 
  private:
-  std::vector<ACLRule> rules_;
+  struct rte_acl_ctx *aclctx;
+  int32_t curr_prio;
+  struct match_headers *buffer;
+  struct match_headers **ptrs;
+  uint32_t *results;
 };
 
-#endif  // BESS_MODULES_ACL_H_
+#endif  // BESS_MODULES_DPDKACL_H_
